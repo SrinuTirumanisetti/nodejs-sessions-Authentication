@@ -2,7 +2,7 @@ const express = require("express");
 const path = require("path");
 const { open } = require("sqlite");
 const sqlite3 = require("sqlite3");
-
+const bcrypt = require("bcrypt");
 const app = express();
 app.use(express.json());
 const dbPath = path.join(__dirname, "goodreads.db");
@@ -38,3 +38,36 @@ app.get("/books/", async (request, response) => {
   response.send(booksArray);
 });
 
+//Create User API
+app.post("/users", async (request, response) => {
+  const { username, name, password, gender, location } = request.body;
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const selectUserQuery = `
+        SELECT 
+            * 
+        FROM 
+            user 
+        WHERE  
+            username = '${username}'`;
+  const dbUser = await db.get(selectUserQuery);
+  if (dbUser === undefined) {
+    // CreateUserQuery
+
+    const createUserQuery = `
+            INSERT INTO
+                user (username, name, password, gender, location)
+            VALUES
+                (
+                '${username}',
+                '${name}',
+                '${hashedPassword}',
+                '${gender}',
+                '${location}'  
+                );`;
+    await db.run(createUserQuery);
+    response.send("User created successfully");
+  } else {
+    response.status(400);
+    response.send("Username already Exists try other");
+  }
+});
